@@ -359,6 +359,11 @@ function pterodactyl_CreateAccount(array $params) {
         $cpu = pterodactyl_GetOption($params, 'cpu');
         $disk = pterodactyl_GetOption($params, 'disk');
         $location_id = pterodactyl_GetOption($params, 'location_id');
+        //Custom code
+        if(strpos($location_id, ',') !== false) {
+            //More than one location found!
+            $locations_array = explode(',',$location_id);
+        }
         $dedicated_ip = pterodactyl_GetOption($params, 'dedicated_ip') ? true : false;
         $port_range = pterodactyl_GetOption($params, 'port_range');
         $port_range = isset($port_range) ? explode(',', $port_range) : [];
@@ -368,37 +373,81 @@ function pterodactyl_CreateAccount(array $params) {
         $allocations = pterodactyl_GetOption($params, 'allocations');
         $backups = pterodactyl_GetOption($params, 'backups');
         $oom_disabled = pterodactyl_GetOption($params, 'oom_disabled') ? true : false;
-        $serverData = [
-            'name' => $name,
-            'user' => (int) $userId,
-            'nest' => (int) $nestId,
-            'egg' => (int) $eggId,
-            'docker_image' => $image,
-            'startup' => $startup,
-            'oom_disabled' => $oom_disabled,
-            'limits' => [
-                'memory' => (int) $memory,
-                'swap' => (int) $swap,
-                'io' => (int) $io,
-                'cpu' => (int) $cpu,
-                'disk' => (int) $disk,
-            ],
-            'feature_limits' => [
-                'databases' => $databases ? (int) $databases : null,
-                'allocations' => (int) $allocations,
-                'backups' => (int) $backups,
-            ],
-            'deploy' => [
-                'locations' => [(int) $location_id],
-                'dedicated_ip' => $dedicated_ip,
-                'port_range' => $port_range,
-            ],
-            'environment' => $environment,
-            'start_on_completion' => true,
-            'external_id' => (string) $params['serviceid'],
-        ];
+        
+        //Custom code
+        if(!empty($locations_array)) {
+            
+            $locations_num = count($locations_array);
+            for($i=0;$i<$locations_num;$i++) {
+                $serverData = [
+                    'name' => $name,
+                    'user' => (int) $userId,
+                    'nest' => (int) $nestId,
+                    'egg' => (int) $eggId,
+                    'docker_image' => $image,
+                    'startup' => $startup,
+                    'oom_disabled' => $oom_disabled,
+                    'limits' => [
+                        'memory' => (int) $memory,
+                        'swap' => (int) $swap,
+                        'io' => (int) $io,
+                        'cpu' => (int) $cpu,
+                        'disk' => (int) $disk,
+                    ],
+                    'feature_limits' => [
+                        'databases' => $databases ? (int) $databases : null,
+                        'allocations' => (int) $allocations,
+                        'backups' => (int) $backups,
+                    ],
+                    'deploy' => [
+                        'locations' => [(int) $locations_array[$i]],
+                        'dedicated_ip' => $dedicated_ip,
+                        'port_range' => $port_range,
+                    ],
+                    'environment' => $environment,
+                    'start_on_completion' => true,
+                    'external_id' => (string) $params['serviceid'],
+                ];
 
-        $server = pterodactyl_API($params, 'servers', $serverData, 'POST');
+                $server = pterodactyl_API($params, 'servers', $serverData, 'POST');
+
+                if($server['status_code'] === 201) break;
+
+            }
+        } else {
+
+            $serverData = [
+                'name' => $name,
+                'user' => (int) $userId,
+                'nest' => (int) $nestId,
+                'egg' => (int) $eggId,
+                'docker_image' => $image,
+                'startup' => $startup,
+                'oom_disabled' => $oom_disabled,
+                'limits' => [
+                    'memory' => (int) $memory,
+                    'swap' => (int) $swap,
+                    'io' => (int) $io,
+                    'cpu' => (int) $cpu,
+                    'disk' => (int) $disk,
+                ],
+                'feature_limits' => [
+                    'databases' => $databases ? (int) $databases : null,
+                    'allocations' => (int) $allocations,
+                    'backups' => (int) $backups,
+                ],
+                'deploy' => [
+                    'locations' => [(int) $location_id],
+                    'dedicated_ip' => $dedicated_ip,
+                    'port_range' => $port_range,
+                ],
+                'environment' => $environment,
+                'start_on_completion' => true,
+                'external_id' => (string) $params['serviceid'],
+            ];
+    
+            $server = pterodactyl_API($params, 'servers', $serverData, 'POST');
+        }
 
         if($server['status_code'] === 400) throw new Exception('Couldn\'t find any nodes satisfying the request.');
         if($server['status_code'] !== 201) throw new Exception('Failed to create the server, received the error code: ' . $server['status_code'] . '. Enable module debug log for more info.');
@@ -408,6 +457,7 @@ function pterodactyl_CreateAccount(array $params) {
             'username' => '',
             'password' => '',
         ]);
+
     } catch(Exception $err) {
         return $err->getMessage();
     }
