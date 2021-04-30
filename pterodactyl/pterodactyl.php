@@ -376,7 +376,7 @@ function pterodactyl_CreateAccount(array $params) {
         
         //Custom code
         if(!empty($locations_array)) {
-            
+
             $locations_num = count($locations_array);
             for($i=0;$i<$locations_num;$i++) {
                 $serverData = [
