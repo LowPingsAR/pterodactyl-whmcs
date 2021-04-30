@@ -379,6 +379,7 @@ function pterodactyl_CreateAccount(array $params) {
 
             $locations_num = count($locations_array);
             for($i=0;$i<$locations_num;$i++) {
+                $location_id = $locations_array[$i];
                 $serverData = [
                     'name' => $name,
                     'user' => (int) $userId,
@@ -400,7 +401,7 @@ function pterodactyl_CreateAccount(array $params) {
                         'backups' => (int) $backups,
                     ],
                     'deploy' => [
-                        'locations' => [(int) $locations_array[$i]],
+                        'locations' => [(int) $location_id],
                         'dedicated_ip' => $dedicated_ip,
                         'port_range' => $port_range,
                     ],
